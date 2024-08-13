@@ -110,7 +110,7 @@ const prebuilt_json_url_path = "/roms/index.json";
 
 /* Process the index JSON object that contains all the ROMs available */
 function processIndex(index) {
-    const to_option = entry => `<option value="${entry.urls}" data-version="${entry.version}" data-hash="${entry.hash}">${entry.name}</option>`;
+    const to_option = (entry) => `<option value="${entry.urls}" data-version="${entry.version}" data-hash="${entry.hash}">${entry.name}</option>`;
 
     /* Generate an HTML option out of each entry */
     const latest  = to_option(index.latest);
