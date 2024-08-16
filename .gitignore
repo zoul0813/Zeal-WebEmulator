@@ -9,4 +9,5 @@ yarn-error.log
 out
 build
 zealemu-*
+roms/
 roms/*
