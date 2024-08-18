@@ -359,11 +359,13 @@ hr {
         grid-column: span 2;
     }
 
-    .axes {
-        grid-column: 1;
+    h2 {
+        font-size: 18px;
+        width: 100%;
+        margin-bottom: 0;
     }
 
-    .buttons {
+    .buttons, .axes {
         grid-column: 1;
         display: flex;
         flex-wrap: wrap;

@@ -75,8 +75,39 @@
   function updateGamepadMap(gamepad) {
     const { index } = gamepad;
     const map = mappings[gamepad.id] ?? Buttons;
-    Object.assign(userPort[index].buttons, map);
-    console.log(userPort[index].buttons);
+    if(userPort[index]) {
+      Object.assign(userPort[index].buttons, map);
+      console.log(userPort[index].buttons);
+    }
+  }
+
+  function makeControllerButton(gamepad, container, buttonIndex) {
+    const select = document.createElement('select');
+    $(select).append($('<option value="-1">Ignore</option>')).attr({
+      'button-index': buttonIndex,
+    });
+    for(let name in Buttons) {
+      const option = document.createElement('option');
+      if(mappings[gamepad.id][name] == buttonIndex) {
+        $(option).attr('selected', true);
+      }
+      $(option).attr({
+        value: Buttons[name],
+      }).text(name);
+      $(select).append(option);
+    }
+    $(container).append(select);
+    $(select).addClass('button').on('change', (e) => {
+      const $this = $(e.currentTarget);
+      console.log('mapping', buttonIndex, $this.val());
+      $('#gamepad-save-map').addClass('alert');
+      if(mappings[gamepad.id]) {
+        const label = $('option:selected', $this).text();
+        mappings[gamepad.id][label] = buttonIndex;
+      }
+      console.log('mapping', mappings[gamepad.id]);
+      updateGamepadMap(gamepad);
+    });
   }
 
   function makeControllerContainer(gamepad) {
@@ -120,7 +151,9 @@
 
     // button saveMap()
     const saveMapButton = document.createElement("button");
-    $(saveMapButton).text('Save Map').on('click', () => {
+    $(saveMapButton).attr({
+      id: 'gamepad-save-map',
+    }).text('Save Map').on('click', () => {
       console.log('saveMap', index, gamepad.id);
       if(mappings[gamepad.id]) {
         const map = mappings[gamepad.id];
@@ -139,48 +172,20 @@
     // div.buttons
     const buttons = document.createElement("div");
     buttons.className = "buttons";
+    $(buttons).append('<h2>Buttons</h2>');
     for (let i = 0; i < gamepad.buttons.length; i++) {
-
-      const select = document.createElement('select');
-      $(select).append($('<option value="-1">Ignore</option>'));
-      for(let name in Buttons) {
-        const option = document.createElement('option');
-        if(mappings[gamepad.id][name] == i) {
-          $(option).attr('selected', true);
-        }
-        $(option).attr({
-          value: Buttons[name],
-        }).text(name);
-        $(select).append(option);
-      }
-      $(buttons).append(select);
-      $(select).addClass('button').on('change', (e) => {
-        const $this = $(e.currentTarget);
-        console.log('mapping', i, $this.val());
-        $(saveMapButton).addClass('alert');
-        if(mappings[gamepad.id]) {
-          const label = $('option:selected', $this).text();
-          mappings[gamepad.id][label] = i;
-        }
-        console.log('mapping', mappings[gamepad.id]);
-        updateGamepadMap(gamepad);
-      });
+      makeControllerButton(gamepad, buttons, i);
     }
     $(details).append(buttons);
 
     // div.axes
     const axes = document.createElement("div");
     axes.className = "axes";
+    $(axes).append('<h2>Axes</h2>');
     for (i = 0; i < gamepad.axes.length; i++) {
-      e = document.createElement("meter");
-      e.className = "axis";
-      $(e).attr({
-        min: -1,
-        max: 1,
-        value: 0,
-      });
-      e.innerHTML = i;
-      $(axes).append(e);
+      const buttonIndex = ((i + 1) * 2) + 64; // virtual button
+      makeControllerButton(gamepad, axes, buttonIndex);
+      makeControllerButton(gamepad, axes, buttonIndex-1);
     }
     $(details).append(axes);
 
@@ -189,11 +194,6 @@
     $(svg).attr({
       id: `${id}-svg`
     }).addClass('svg').load('/imgs/snes-controller.svg');
-
-    // $(svg).attr({
-    //   data: '/imgs/snes-controller.svg',
-    //   type: 'image/svg+xml',
-    // });
     $(details).append(svg);
 
     return details;
@@ -215,17 +215,35 @@
     delete gamePads[gamepad.index];
   }
 
+  function gamepadTabUpdateVisual(gamepadId, controllerIndex, buttonIndex, pressed) {
+    if(mappings[gamepadId]) {
+      const map = mappings[gamepadId];
+      // lookup mapping
+      for(button in map) {
+        if(map[button] == buttonIndex) {
+          const $svg = $(`#controller${controllerIndex}-svg svg`);
+          const $svgButton = $svg.find(`.svg-button-${button.toLowerCase()}`);
+          if(pressed) {
+            $svgButton.addClass('pressed');
+          } else {
+            $svgButton.removeClass('pressed');
+          }
+        }
+      }
+    }
+  }
+
   function gamepadTabUpdate() {
     const gamePads = navigator.getGamepads() ?? [];
     for (j = 0; j < gamePads.length; j++) {
       const gamepad = gamePads[j];
       if(!gamepad) continue;
-      const d = document.getElementById("controller" + j);
-      if(!d) continue;
 
-      const buttons = d.getElementsByClassName("button");
+      const $d = $(`#controller${j}`);
+      if(!$d.length) continue;
+
       for (let i = 0; i < gamepad.buttons.length; i++) {
-        const b = buttons[i];
+        const $button = $(`.buttons .button[button-index=${i}]`);
         let val = gamepad.buttons[i];
         let pressed = val == 1.0;
         let touched = false;
@@ -237,38 +255,54 @@
           val = val.value;
         }
         const pct = Math.round(val * 100) + "%";
-        b.style.backgroundSize = pct + " " + pct;
-        b.className = "button";
+        $button.css({
+          backgroundSize: pct + ' ' + pct,
+        }).addClass('button');
         if (pressed) {
-          b.className += " pressed";
+          $button.addClass('pressed');
+        } else {
+          $button.removeClass('pressed');
         }
         if (touched) {
-          b.className += " touched";
+          $button.addClass('touched');
+        } else {
+          $button.removeClass('touched');
         }
 
-        if(mappings[gamepad.id]) {
-          const map = mappings[gamepad.id];
-          // lookup mapping
-          for(button in map) {
-            if(map[button] == i) {
-              // console.log('found map', button, map[buttons]);
-              const $svg = $(`#controller${j}-svg svg`);
-              const $svgButton = $svg.find(`.svg-button-${button.toLowerCase()}`);
-              if(pressed || touched) {
-                $svgButton.addClass('pressed');
-              } else {
-                $svgButton.removeClass('pressed');
-              }
-            }
-          }
-        }
+        gamepadTabUpdateVisual(gamepad.id, j, i, pressed || touched);
+        // if(mappings[gamepad.id]) {
+        //   const map = mappings[gamepad.id];
+        //   // lookup mapping
+        //   for(button in map) {
+        //     if(map[button] == i) {
+        //       const $svg = $(`#controller${j}-svg svg`);
+        //       const $svgButton = $svg.find(`.svg-button-${button.toLowerCase()}`);
+        //       if(pressed || touched) {
+        //         $svgButton.addClass('pressed');
+        //       } else {
+        //         $svgButton.removeClass('pressed');
+        //       }
+        //     }
+        //   }
+        // }
       }
 
-      const axes = d.getElementsByClassName("axis");
       for (let i = 0; i < gamepad.axes.length; i++) {
-        const a = axes[i];
-        a.innerHTML = i + ": " + gamepad.axes[i].toFixed(4);
-        a.setAttribute("value", gamepad.axes[i]);
+        const buttonIndex = ((i + 1) * 2) + 64; // virtual button
+        const value = gamepad.axes[i];
+        // console.log(typeof value, value, buttonIndex);
+        const $button1 = $(`.axes .button[button-index=${buttonIndex-1}]`).removeClass('pressed');
+        const $button2 = $(`.axes .button[button-index=${buttonIndex}]`).removeClass('pressed');
+        gamepadTabUpdateVisual(gamepad.id, j, buttonIndex - 1, false);
+        gamepadTabUpdateVisual(gamepad.id, j, buttonIndex, false);
+        if(value > 0.25) {
+          $button1.addClass('pressed');
+          gamepadTabUpdateVisual(gamepad.id, j, buttonIndex - 1, true);
+        } else if(value < -0.25) {
+          $button2.addClass('pressed');
+          gamepadTabUpdateVisual(gamepad.id, j, buttonIndex, true);
+        }
+
       }
     }
     if(active) requestAnimationFrame(gamepadTabUpdate);

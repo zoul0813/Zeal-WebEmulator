@@ -49,6 +49,9 @@ function SNESAdapter(Zeal, PIO, dataPin = 0) {
     const gamepad = gamepadScan();
     bitCounter = 0;
 
+    // clear previous values
+    bits = Array.apply(null, Array(16)).map(() => 0);
+
     // set buttons
     for(let i = 0; i < gamepad.buttons.length; i++) {
       switch(i) {
@@ -56,10 +59,10 @@ function SNESAdapter(Zeal, PIO, dataPin = 0) {
         case buttons.Y: bits[1] = gamepad.buttons[i].pressed ? 1 : 0; break;
         case buttons.Select: bits[2] = gamepad.buttons[i].pressed ? 1 : 0; break;
         case buttons.Start: bits[3] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        // case buttons.Up: bits[buttons.Up] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        // case buttons.Down: bits[buttons.Down] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        // case buttons.Left: bits[buttons.Left] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        // case buttons.Right: bits[buttons.Right] = gamepad.buttons[i].pressed ? 1 : 0; break;
+        case buttons.Up: bits[4] = gamepad.buttons[i].pressed ? 1 : 0; break;
+        case buttons.Down: bits[5] = gamepad.buttons[i].pressed ? 1 : 0; break;
+        case buttons.Left: bits[6] = gamepad.buttons[i].pressed ? 1 : 0; break;
+        case buttons.Right: bits[7] = gamepad.buttons[i].pressed ? 1 : 0; break;
         case buttons.A: bits[8] = gamepad.buttons[i].pressed ? 1 : 0; break;
         case buttons.X: bits[9] = gamepad.buttons[i].pressed ? 1 : 0; break;
         case buttons.L: bits[10] = gamepad.buttons[i].pressed ? 1 : 0; break;
@@ -70,19 +73,33 @@ function SNESAdapter(Zeal, PIO, dataPin = 0) {
         case buttons.Unused4: bits[15] = gamepad.buttons[i].pressed ? 1 : 0; break;
       }
     }
+
     // set axes
-    // for(let i = 0; i < gamepad.axes.length; i++) {
-    //   switch(i) {
-    //     case 0: {
-    //       bits[buttons.Up] = gamepad.axes[i] > AXIS_THRESHOLD ? 1 : 0;
-    //       bits[buttons.Down] = gamepad.axes[i] < -AXIS_THRESHOLD ? 1 : 0;
-    //     } break;
-    //     case 1: {
-    //       bits[buttons.Up] = gamepad.axes[i] > AXIS_THRESHOLD ? 1 : 0;
-    //       bits[buttons.Left] = gamepad.axes[i] < -AXIS_THRESHOLD ? 1 : 0;
-    //     } break;
-    //   }
-    // }
+    for(let i = 0; i < gamepad.axes.length; i++) {
+      const buttonIndex = ((i + 1) * 2) + 64; // virtual button
+      const value = gamepad.axes[i];
+      let pressed = false;
+
+      let index = buttonIndex;
+      if(value > AXIS_THRESHOLD) {
+        pressed = true;
+        index -= 1;
+      }
+      if(value < -AXIS_THRESHOLD) {
+        pressed = true;
+      }
+
+      switch(index) {
+        case buttons.Up: bits[4] = pressed ? 1 : 0; break;
+        case buttons.Down: bits[5] = pressed ? 1 : 0; break;
+        case buttons.Left: bits[6] = pressed ? 1 : 0; break;
+        case buttons.Right: bits[7] = pressed ? 1 : 0; break;
+        case buttons.Unused1: bits[12] = pressed ? 1 : 0; break;
+        case buttons.Unused2: bits[13] = pressed ? 1 : 0; break;
+        case buttons.Unused3: bits[14] = pressed ? 1 : 0; break;
+        case buttons.Unused4: bits[15] = pressed ? 1 : 0; break;
+      }
+    }
 
     // set IO_DATA to first button
     pio.pio_set_a_pin(dataPin, bits[bitCounter]);
