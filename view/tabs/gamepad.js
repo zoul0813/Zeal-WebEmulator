@@ -76,7 +76,7 @@
     const { index } = gamepad;
     const map = mappings[gamepad.id] ?? Buttons;
     if(userPort[index]) {
-      Object.assign(userPort[index].buttons, map);
+      Object.assign(userPort[index].buttons, map.buttons);
       console.log(userPort[index].buttons);
     }
   }
@@ -88,7 +88,7 @@
     });
     for(let name in Buttons) {
       const option = document.createElement('option');
-      if(mappings[gamepad.id][name] == buttonIndex) {
+      if(mappings[gamepad.id].buttons[name] == buttonIndex) {
         $(option).attr('selected', true);
       }
       $(option).attr({
@@ -103,7 +103,7 @@
       $('#gamepad-save-map').addClass('alert');
       if(mappings[gamepad.id]) {
         const label = $('option:selected', $this).text();
-        mappings[gamepad.id][label] = buttonIndex;
+        mappings[gamepad.id].buttons[label] = buttonIndex;
       }
       console.log('mapping', mappings[gamepad.id]);
       updateGamepadMap(gamepad);
@@ -141,6 +141,11 @@
     });
     $(toolbar).append(attachButton);
 
+    if(mappings[gamepad.id].attach) {
+      // attachToUserPort(gamepad);
+      $(attachButton).trigger('click');
+    }
+
     // button detach()
     const detatchButton = document.createElement("button");
     $(detatchButton).text('Detach').on('click', () => {
@@ -163,6 +168,22 @@
       }
     });
     $(toolbar).append(saveMapButton);
+
+    // input.checkbox autoAttach
+    const autoAttachLabel = document.createElement('label');
+    $(autoAttachLabel).text('Auto Attach');
+    const autoAttachCheckbox = document.createElement('input');
+    $(autoAttachCheckbox).attr({
+      type: 'checkbox',
+      checked: mappings[gamepad.id].attach ?? false,
+    }).on('change', (e) => {
+      if(mappings[gamepad.id]) {
+        mappings[gamepad.id].attach = $(e.currentTarget).is(':checked');
+      }
+      console.log('map', mappings[gamepad.id]);
+    });
+    $(autoAttachLabel).append(autoAttachCheckbox);
+    $(toolbar).append(autoAttachLabel);
 
     // h1
     const title = document.createElement("h1");
@@ -217,7 +238,7 @@
 
   function gamepadTabUpdateVisual(gamepadId, controllerIndex, buttonIndex, pressed) {
     if(mappings[gamepadId]) {
-      const map = mappings[gamepadId];
+      const map = mappings[gamepadId].buttons;
       // lookup mapping
       for(button in map) {
         if(map[button] == buttonIndex) {
@@ -270,21 +291,6 @@
         }
 
         gamepadTabUpdateVisual(gamepad.id, j, i, pressed || touched);
-        // if(mappings[gamepad.id]) {
-        //   const map = mappings[gamepad.id];
-        //   // lookup mapping
-        //   for(button in map) {
-        //     if(map[button] == i) {
-        //       const $svg = $(`#controller${j}-svg svg`);
-        //       const $svgButton = $svg.find(`.svg-button-${button.toLowerCase()}`);
-        //       if(pressed || touched) {
-        //         $svgButton.addClass('pressed');
-        //       } else {
-        //         $svgButton.removeClass('pressed');
-        //       }
-        //     }
-        //   }
-        // }
       }
 
       for (let i = 0; i < gamepad.axes.length; i++) {
