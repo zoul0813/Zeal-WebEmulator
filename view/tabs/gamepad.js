@@ -217,7 +217,7 @@
     const svg = document.createElement('div');
     $(svg).attr({
       id: `${id}-svg`
-    }).addClass('svg').load('/imgs/snes-controller.svg');
+    }).addClass('svg').load('./imgs/snes-controller.svg');
     $(details).append(svg);
 
     return details;
