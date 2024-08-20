@@ -117,7 +117,10 @@
     // get stored or create default mapping
     mappings[gamepad.id] = (() => {
       const map = JSON.parse(localStorage.getItem(gamepad.id) ?? 'null');
-      return map ?? Object.assign({}, Buttons);
+      return map ?? Object.assign({}, {
+        attach: false,
+        buttons: Buttons
+      });
     })();
 
     // div.controller
