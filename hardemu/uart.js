@@ -170,4 +170,10 @@ function UART(Zeal, PIO) {
 
     /* Send a binary array to the UART */
     this.send_binary_array = send_binary_array;
+
+    this.open = (port) => undefined;
+    this.close = () => undefined;
+
+    this.opened = true;
+    this.type = 'emulated';
 }

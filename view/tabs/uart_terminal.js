@@ -67,7 +67,7 @@ $("#uart-char-send").on("click", function() {
         return;
     }
 
-    const binary = [$("#uart-char").val()];
+    const binary = [parseInt($("#uart-char").val())];
     console.log("binary", binary);
     sending = true;
     $("#sending").text(sending_message);
