@@ -19,6 +19,8 @@ function UART(Zeal, PIO) {
     /* TX FIFO containing pairs of { tstates, bit } */
     var tx_fifo = [];
 
+    var active = false;
+
     function set_baudrate(baudrate) {
         baudrate_us = 1000000/baudrate;
         bit_tstates = us_to_tstates(baudrate_us) + 1;
@@ -49,6 +51,7 @@ function UART(Zeal, PIO) {
     /* Function called when a BIT is written to the UART, not a byte
      * The T-states will let us calculate the elapsed time between two write */
     function write_tx(read, pin, bit, transition) {
+        if(!active) return;
         console.assert(pin == IO_UART_TX_PIN);
 
         if (read) {
@@ -83,6 +86,7 @@ function UART(Zeal, PIO) {
     var success_callback = null;
 
     function start_shifting () {
+        if(!active) return;
         console.assert(shift_register != null);
         var callback = true;
         if (!shift_register.start) {
@@ -129,11 +133,12 @@ function UART(Zeal, PIO) {
     }
 
     terminal.onData((data) => {
+        if(!active) return;
+        console.log('terminal', 'onData', active, data);
         /* Put the current bytes in the waiting list */
         for (var i = 0; i < data.length; i++){
             received.push(data.charCodeAt(i) & 0xff);
         }
-
         start_transfer();
     });
 
@@ -154,11 +159,6 @@ function UART(Zeal, PIO) {
         start_transfer();
     }
 
-
-    /* Connect the TX pin to the PIO */
-    pio.pio_listen_b_pin(IO_UART_TX_PIN, write_tx);
-    /* Connect the RX pin to the PIO */
-    pio.pio_listen_b_pin(IO_UART_RX_PIN, read_rx);
     /* Set RX pin to 1 (idle) */
     pio.pio_set_b_pin(IO_UART_RX_PIN, 1);
 
@@ -176,4 +176,19 @@ function UART(Zeal, PIO) {
 
     this.opened = true;
     this.type = 'emulated';
+    this.setActive = (state) => {
+        console.log(this.type, state);
+        active = state;
+        if(active) {
+            /* Connect the TX pin to the PIO */
+            pio.pio_listen_b_pin(IO_UART_TX_PIN, write_tx);
+            /* Connect the RX pin to the PIO */
+            pio.pio_listen_b_pin(IO_UART_RX_PIN, read_rx);
+        } else {
+            /* Connect the TX pin to the PIO */
+            pio.pio_unlisten_b_pin(IO_UART_TX_PIN);
+            /* Connect the RX pin to the PIO */
+            pio.pio_unlisten_b_pin(IO_UART_RX_PIN);
+        }
+    }
 }

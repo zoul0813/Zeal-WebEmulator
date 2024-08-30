@@ -20,6 +20,9 @@ function UART_WebSerial(Zeal, PIO) {
     var tx_fifo = [];
 
     var openedPort;
+    var reader;
+    var writer;
+    var active = false;
 
     function set_baudrate(baudrate) {
         baudrate_us = 1000000/baudrate;
@@ -42,8 +45,10 @@ function UART_WebSerial(Zeal, PIO) {
             }
             value |= (line << i);
         }
-        /* The terminal is a global variable */
+        // /* The terminal is a global variable */
+        console.log('transferComplete', value);
         terminal.write([value]);
+        send_binary_array([value]);
         /* Reset the FIFO in any case */
         tx_fifo = [];
     }
@@ -51,6 +56,7 @@ function UART_WebSerial(Zeal, PIO) {
     /* Function called when a BIT is written to the UART, not a byte
      * The T-states will let us calculate the elapsed time between two write */
     function write_tx(read, pin, bit, transition) {
+        if(!active) return;
         console.assert(pin == IO_UART_TX_PIN);
 
         if (read) {
@@ -84,112 +90,111 @@ function UART_WebSerial(Zeal, PIO) {
     var shift_register = null;
     var success_callback = null;
 
-    // function start_shifting () {
-    //     console.assert(shift_register != null);
-    //     var callback = true;
-    //     if (!shift_register.start) {
-    //         /* Send a start bit */
-    //         pio.pio_set_b_pin(IO_UART_RX_PIN, 0);
-    //         shift_register.start = true;
-    //     } else if (shift_register.stop) {
-    //         /* Stop was sent, continue with the next register */
-    //         if (received.length > 0) {
-    //             shift_register = { data: received.shift(), start: false, stop: false, shifted: 0 };
-    //             start_shifting();
-    //             return;
-    //         } else {
-    //             shift_register = null;
-    //             callback = false;
-    //             const tocall = success_callback;
-    //             success_callback = null;
-    //             if (tocall) {
-    //                 tocall();
-    //             }
-    //         }
-    //     } else if (shift_register.shifted == 8) {
-    //         /* Stop bit */
-    //         pio.pio_set_b_pin(IO_UART_RX_PIN, 1);
-    //         shift_register.stop = true;
-    //     } else {
-    //         pio.pio_set_b_pin(IO_UART_RX_PIN, shift_register.data & 1);
-    //         shift_register.data >>= 1
-    //         shift_register.shifted++;
-    //     }
-
-    //     /* If we have to register a callback, do it now */
-    //     if (callback) {
-    //         zeal.registerTstateCallback(start_shifting, bit_tstates - 1);
-    //     }
-    // }
-
-    // function start_transfer() {
-    //     if (shift_register == null) {
-    //         /* Shift data right away */
-    //         shift_register = { data: received.shift(), start: false, stop: false, shifted: 0 };
-    //         start_shifting();
-    //     }
-    // }
-
-    terminal.onData((data) => {
-        /* Put the current bytes in the waiting list */
-        for (var i = 0; i < data.length; i++){
-            received.push(data.charCodeAt(i) & 0xff);
+    function start_shifting () {
+        if(!active) return;
+        console.assert(shift_register != null);
+        var callback = true;
+        if (!shift_register.start) {
+            /* Send a start bit */
+            pio.pio_set_b_pin(IO_UART_RX_PIN, 0);
+            shift_register.start = true;
+        } else if (shift_register.stop) {
+            /* Stop was sent, continue with the next register */
+            if (received.length > 0) {
+                shift_register = { data: received.shift(), start: false, stop: false, shifted: 0 };
+                start_shifting();
+                return;
+            } else {
+                shift_register = null;
+                callback = false;
+                const tocall = success_callback;
+                success_callback = null;
+                if (tocall) {
+                    tocall();
+                }
+            }
+        } else if (shift_register.shifted == 8) {
+            /* Stop bit */
+            pio.pio_set_b_pin(IO_UART_RX_PIN, 1);
+            shift_register.stop = true;
+        } else {
+            pio.pio_set_b_pin(IO_UART_RX_PIN, shift_register.data & 1);
+            shift_register.data >>= 1
+            shift_register.shifted++;
         }
 
-        start_transfer();
-    });
+        /* If we have to register a callback, do it now */
+        if (callback) {
+            zeal.registerTstateCallback(start_shifting, bit_tstates - 1);
+        }
+    }
+
+    function start_transfer() {
+        if (shift_register == null) {
+            /* Shift data right away */
+            shift_register = { data: received.shift(), start: false, stop: false, shifted: 0 };
+            start_shifting();
+        }
+    }
+
+    // This is where Serial data comes in
+    // terminal.onData((data) => {
+    //     /* Put the current bytes in the waiting list */
+    //     for (var i = 0; i < data.length; i++){
+    //         received.push(data.charCodeAt(i) & 0xff);
+    //     }
+
+    //     start_transfer();
+    // });
+
+    async function readLoop() {
+        while(openedPort && reader) {
+            // Connect to `port` or add it to the list of available ports.
+            try {
+                while(true) {
+                    const { value, done } = await reader.read();
+                    console.log('serial', 'readable', active, value);
+                    if(done) break;
+
+                    // const str = new TextDecoder().decode(value);
+                    for(var i = 0; i < value.length; i++) {
+                        console.log("received", value);
+                        for(b of value) {
+                            console.log('byte', b & 0xff);
+                            received.push(b & 0xff);
+                            start_transfer();
+                        }
+                    }
+                }
+            } catch(err) {
+                console.warn('serial error', err);
+            }
+        }
+    }
 
     function read_rx(read, pin, bit, transition) {
         /* Nothing to do if a read is occurring, we already notify the PIO of any changes (asynchronously) */
     }
 
     function send_binary_array(binary, callback = null) {
-        if(openedPort && openedPort.writable) {
-            const writer = openedPort.writable.getWriter();
-
+        if(openedPort && writer) {
+            let data = new Uint8Array(binary);
             if (typeof binary === "string") {
                 const encoder = new TextEncoder();
-                writer.ready.then(() => {
-                    writer.write(encoder.encode(binary));
-                });
-            } else {
-                writer.ready.then(() => {
-                    writer.write(new Uint8Array(binary));
-                });
+                data = encoder.encode(binary);
             }
 
-            writer.ready.then(() => {
-                writer.close();
+            console.log('serial', 'writable', active, data);
+            writer.write(data).then(() => {
                 if(callback) callback();
-            })
-        }
-
-        // success_callback = callback;
-        // start_transfer();
-    }
-
-    async function readSerial() {
-        if(!openedPort) return;
-        while(openedPort.readable) {
-            // Connect to `port` or add it to the list of available ports.
-            const reader = openedPort.readable.getReader();
-            try {
-                while(true) {
-                    const {value,done} = await reader.read();
-                    if(done) break;
-
-                    const str = new TextDecoder().decode(value);
-                    console.log("received", str);
-                }
-            } catch(err) {
-                console.warn('serial error', err);
-            } finally {
-                reader.releaseLock();
-            }
+            });
         }
     }
 
     async function close() {
+        if(reader) reader.releaseLock();
+        if(writer) writer.releaseLock();
+
         return openedPort.forget().then(() => {
             console.log('forget', openedPort);
             this.openedPort = null;
@@ -202,15 +207,15 @@ function UART_WebSerial(Zeal, PIO) {
         console.log('opened', port);
         openedPort = port;
         this.opened = true;
-        readSerial(openedPort);
+
+        if(openedPort.readable) {
+            reader = await openedPort.readable.getReader();
+            readLoop(openedPort);
+        }
+        if(openedPort.writable) writer = await openedPort.writable.getWriter();
         return Promise.resolve(true);
     }
 
-
-    /* Connect the TX pin to the PIO */
-    pio.pio_listen_b_pin(IO_UART_TX_PIN, write_tx);
-    /* Connect the RX pin to the PIO */
-    pio.pio_listen_b_pin(IO_UART_RX_PIN, read_rx);
     /* Set RX pin to 1 (idle) */
     pio.pio_set_b_pin(IO_UART_RX_PIN, 1);
 
@@ -228,8 +233,25 @@ function UART_WebSerial(Zeal, PIO) {
 
     this.opened = false;
     this.type = 'web-serial';
+    this.setActive = (state) => {
+        console.log(this.type, state);
+        active = state;
 
+        if(active) {
+            /* Connect the TX pin to the PIO */
+            pio.pio_listen_b_pin(IO_UART_TX_PIN, write_tx);
+            /* Connect the RX pin to the PIO */
+            pio.pio_listen_b_pin(IO_UART_RX_PIN, read_rx);
 
+        } else {
+            /* Connect the TX pin to the PIO */
+            pio.pio_unlisten_b_pin(IO_UART_TX_PIN);
+            /* Connect the RX pin to the PIO */
+            pio.pio_unlisten_b_pin(IO_UART_RX_PIN);
+        }
+    }
+
+    // TODO: are these useful in some way?
     navigator.serial.addEventListener("connect", (e) => {
         // Connect to `e.target` or add it to a list of available ports.
         console.log('serial', 'connect', e.target);
@@ -244,36 +266,4 @@ function UART_WebSerial(Zeal, PIO) {
         // Initialize the list of available ports with `ports` on page load.
         console.log('ports', ports);
     });
-
-
-    // button.addEventListener("click", () => {
-
-    //     if(openedPort) {
-    //         openedPort.forget().then(() => {
-    //             console.log('forget', openedPort);
-    //             openedPort = null;
-    //         });
-    //         $(button).text("Connect Serial");
-    //         return;
-    //     }
-
-    //     // const usbVendorId = 0xabcd;
-    //     navigator.serial
-    //         // .requestPort({ filters: [{ usbVendorId }] })
-    //         .requestPort()
-    //         .then(async (port) => {
-    //             console.log('requested', port);
-    //             port.open({
-    //                 baudRate: 57600
-    //             }).then(() => {
-    //                 console.log('opened', port);
-    //                 openedPort = port;
-    //                 $(button).text("Disconnect Serial");
-    //                 readSerial(openedPort);
-    //             });
-    //         })
-    //         .catch((e) => {
-    //             // The user didn't select a port.
-    //         });
-    // });
 }

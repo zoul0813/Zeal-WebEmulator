@@ -54,6 +54,8 @@ class Zeal8bitComputer extends Z80Machine {
         this.machine_add_io_device(0xe0, keyboard.io_region);
         this.machine_add_io_device(0xf0, mmu.io_region);
 
+        uart.setActive(true);
+
         /* Make the devices public */
         this.mmu = mmu;
         this.rom = rom;
@@ -68,6 +70,7 @@ class Zeal8bitComputer extends Z80Machine {
         this.compactflash = compactflash;
 
         this.set_serial = (type) => {
+            this.uart.setActive(false);
             switch(type) {
                 case 'web-serial':
                     this.uart = uart_web_serial;
@@ -76,6 +79,7 @@ class Zeal8bitComputer extends Z80Machine {
                 default:
                     this.uart = uart;
             }
+            this.uart.setActive(true);
         }
     }
 

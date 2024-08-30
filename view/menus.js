@@ -64,7 +64,12 @@ $('#web-serial-connect').on('click', (e) => {
         .then(async (port) => {
             console.log('requested', port);
             port.open({
-                baudRate: 57600
+                baudRate: 57600,
+                dataBits: 8,
+                stopBits: 1,
+                parity: 'none',
+                flowControl: 'none',
+                bufferSize: 1,
             }).then(() => {
                 zealcom.uart.open(port).then(() => {
                     $button.text("Disconnect Serial");
