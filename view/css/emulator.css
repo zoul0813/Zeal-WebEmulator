@@ -137,7 +137,9 @@ hr {
     margin-inline: auto;
     margin-top: 3em;
     background-color: black;
-    transform-origin: left top;
+    /* transform-origin: top; */
+    width: 640px;
+    height: 480px;
     image-rendering: pixelated;
 }
 
