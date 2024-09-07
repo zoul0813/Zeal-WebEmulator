@@ -46,7 +46,6 @@ function UART_WebSerial(Zeal, PIO) {
             value |= (line << i);
         }
         // /* The terminal is a global variable */
-        console.log('transferComplete', value);
         terminal.write([value]);
         send_binary_array([value]);
         /* Reset the FIFO in any case */
@@ -153,15 +152,14 @@ function UART_WebSerial(Zeal, PIO) {
             try {
                 while(true) {
                     const { value, done } = await reader.read();
-                    console.log('serial', 'readable', active, value);
                     if(done) break;
 
                     // const str = new TextDecoder().decode(value);
                     for(var i = 0; i < value.length; i++) {
-                        console.log("received", value);
                         for(b of value) {
-                            console.log('byte', b & 0xff);
-                            received.push(b & 0xff);
+                            const __val = b & 0xff;
+                            // console.log('byte', {hex: __val.toString(16), dec: __val});
+                            received.push(__val);
                             start_transfer();
                         }
                     }
@@ -184,7 +182,6 @@ function UART_WebSerial(Zeal, PIO) {
                 data = encoder.encode(binary);
             }
 
-            console.log('serial', 'writable', active, data);
             writer.write(data).then(() => {
                 if(callback) callback();
             });
@@ -196,7 +193,6 @@ function UART_WebSerial(Zeal, PIO) {
         if(writer) writer.releaseLock();
 
         return openedPort.forget().then(() => {
-            console.log('forget', openedPort);
             this.openedPort = null;
             this.opened = false;
             zealcom.set_serial('emulated');
@@ -204,7 +200,6 @@ function UART_WebSerial(Zeal, PIO) {
     };
 
     async function open(port) {
-        console.log('opened', port);
         openedPort = port;
         this.opened = true;
 
@@ -250,20 +245,4 @@ function UART_WebSerial(Zeal, PIO) {
             pio.pio_unlisten_b_pin(IO_UART_RX_PIN);
         }
     }
-
-    // TODO: are these useful in some way?
-    navigator.serial.addEventListener("connect", (e) => {
-        // Connect to `e.target` or add it to a list of available ports.
-        console.log('serial', 'connect', e.target);
-    });
-
-    navigator.serial.addEventListener("disconnect", (e) => {
-        // Remove `e.target` from the list of available ports.
-        console.log('serial', 'disconnect', e.target);
-    });
-
-    navigator.serial.getPorts().then((ports) => {
-        // Initialize the list of available ports with `ports` on page load.
-        console.log('ports', ports);
-    });
 }
