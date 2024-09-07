@@ -45,8 +45,7 @@ function UART_WebSerial(Zeal, PIO) {
             }
             value |= (line << i);
         }
-        // /* The terminal is a global variable */
-        terminal.write([value]);
+
         send_binary_array([value]);
         /* Reset the FIFO in any case */
         tx_fifo = [];
@@ -136,16 +135,6 @@ function UART_WebSerial(Zeal, PIO) {
         }
     }
 
-    // This is where Serial data comes in
-    // terminal.onData((data) => {
-    //     /* Put the current bytes in the waiting list */
-    //     for (var i = 0; i < data.length; i++){
-    //         received.push(data.charCodeAt(i) & 0xff);
-    //     }
-
-    //     start_transfer();
-    // });
-
     async function readLoop() {
         while(openedPort && reader) {
             // Connect to `port` or add it to the list of available ports.
@@ -189,8 +178,8 @@ function UART_WebSerial(Zeal, PIO) {
     }
 
     async function close() {
-        if(reader) reader.releaseLock();
-        if(writer) writer.releaseLock();
+        if(reader) { reader.releaseLock(); reader = null };
+        if(writer) { writer.releaseLock(); writer = null };
 
         return openedPort.forget().then(() => {
             this.openedPort = null;

@@ -132,15 +132,17 @@ function UART(Zeal, PIO) {
         }
     }
 
-    terminal.onData((data) => {
-        if(!active) return;
-        console.log('terminal', 'onData', active, data);
-        /* Put the current bytes in the waiting list */
-        for (var i = 0; i < data.length; i++){
-            received.push(data.charCodeAt(i) & 0xff);
-        }
-        start_transfer();
-    });
+    function attachTerminal() {
+        return terminal.onData((data) => {
+            if(!active) return;
+            console.log('terminal', 'onData', active, data);
+            /* Put the current bytes in the waiting list */
+            for (var i = 0; i < data.length; i++){
+                received.push(data.charCodeAt(i) & 0xff);
+            }
+            start_transfer();
+        });
+    }
 
     function read_rx(read, pin, bit, transition) {
         /* Nothing to do if a read is occurring, we already notify the PIO of any changes (asynchronously) */
@@ -184,11 +186,15 @@ function UART(Zeal, PIO) {
             pio.pio_listen_b_pin(IO_UART_TX_PIN, write_tx);
             /* Connect the RX pin to the PIO */
             pio.pio_listen_b_pin(IO_UART_RX_PIN, read_rx);
+            onData = attachTerminal();
         } else {
             /* Connect the TX pin to the PIO */
             pio.pio_unlisten_b_pin(IO_UART_TX_PIN);
             /* Connect the RX pin to the PIO */
             pio.pio_unlisten_b_pin(IO_UART_RX_PIN);
+            if(onData) {
+                onData.dispose();
+            }
         }
     }
 }

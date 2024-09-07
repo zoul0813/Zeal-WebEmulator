@@ -49,13 +49,15 @@ $("#theme").on("change", function() {
 
 $('#web-serial-connect').on('click', (e) => {
     const $button = $(e.currentTarget);
+    $button.blur();
     if(zealcom.uart.type == 'web-serial' && zealcom.uart.opened) {
         return zealcom.uart.close().then(() => {
             $button.text("Connect Serial");
+
+            $('#uart-tab').show();
+            $('#uartview').show();
         });
     }
-
-    zealcom.set_serial('web-serial');
 
     // const usbVendorId = 0xabcd;
     navigator.serial
@@ -71,8 +73,13 @@ $('#web-serial-connect').on('click', (e) => {
                 flowControl: 'none',
                 bufferSize: 1,
             }).then(() => {
+                zealcom.set_serial('web-serial');
                 zealcom.uart.open(port).then(() => {
                     $button.text("Disconnect Serial");
+
+                    $('#uartview').fadeOut();
+                    $('#uart-tab').fadeOut();
+                    $('.tabs :first-child').trigger('click');
                 })
             });
         })
@@ -80,5 +87,11 @@ $('#web-serial-connect').on('click', (e) => {
             // The user didn't select a port.
             console.warn('user failed to select a port, ignoring');
         });
+});
 
+jQuery(() => {
+    if(!navigator || !navigator.serial) {
+        // disable web serial, only supported in latest Chrome, Edge and Opera
+        $('#web-serial-settings').hide();
+    }
 });
