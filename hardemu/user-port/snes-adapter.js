@@ -50,27 +50,27 @@ function SNESAdapter(Zeal, PIO, dataPin = 0) {
     bitCounter = 0;
 
     // clear previous values
-    bits = Array.apply(null, Array(16)).map(() => 0);
+    bits = Array.apply(null, Array(16)).map(() => 1);
 
     // set buttons
     for(let i = 0; i < gamepad.buttons.length; i++) {
       switch(i) {
-        case buttons.B: bits[0] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Y: bits[1] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Select: bits[2] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Start: bits[3] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Up: bits[4] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Down: bits[5] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Left: bits[6] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Right: bits[7] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.A: bits[8] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.X: bits[9] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.L: bits[10] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.R: bits[11] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Unused1: bits[12] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Unused2: bits[13] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Unused3: bits[14] = gamepad.buttons[i].pressed ? 1 : 0; break;
-        case buttons.Unused4: bits[15] = gamepad.buttons[i].pressed ? 1 : 0; break;
+        case buttons.B: bits[0] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Y: bits[1] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Select: bits[2] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Start: bits[3] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Up: bits[4] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Down: bits[5] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Left: bits[6] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Right: bits[7] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.A: bits[8] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.X: bits[9] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.L: bits[10] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.R: bits[11] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Unused1: bits[12] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Unused2: bits[13] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Unused3: bits[14] = gamepad.buttons[i].pressed ? 0 : 1; break;
+        case buttons.Unused4: bits[15] = gamepad.buttons[i].pressed ? 0 : 1; break;
       }
     }
 
@@ -90,14 +90,14 @@ function SNESAdapter(Zeal, PIO, dataPin = 0) {
       }
 
       switch(index) {
-        case buttons.Up: bits[4] = pressed ? 1 : 0; break;
-        case buttons.Down: bits[5] = pressed ? 1 : 0; break;
-        case buttons.Left: bits[6] = pressed ? 1 : 0; break;
-        case buttons.Right: bits[7] = pressed ? 1 : 0; break;
-        case buttons.Unused1: bits[12] = pressed ? 1 : 0; break;
-        case buttons.Unused2: bits[13] = pressed ? 1 : 0; break;
-        case buttons.Unused3: bits[14] = pressed ? 1 : 0; break;
-        case buttons.Unused4: bits[15] = pressed ? 1 : 0; break;
+        case buttons.Up: bits[4] = pressed ? 0 : 1; break;
+        case buttons.Down: bits[5] = pressed ? 0 : 1; break;
+        case buttons.Left: bits[6] = pressed ? 0 : 1; break;
+        case buttons.Right: bits[7] = pressed ? 0 : 1; break;
+        case buttons.Unused1: bits[12] = pressed ? 0 : 1; break;
+        case buttons.Unused2: bits[13] = pressed ? 0 : 1; break;
+        case buttons.Unused3: bits[14] = pressed ? 0 : 1; break;
+        case buttons.Unused4: bits[15] = pressed ? 0 : 1; break;
       }
     }
 
