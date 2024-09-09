@@ -199,7 +199,7 @@
                 </select>
 
                 <section id="romadvanced">
-                    <a href="#">Advanced...</a>
+                    <a id="romload-advanced">Advanced...</a>
                 </section>
             </section>
 
@@ -233,19 +233,19 @@
         </div>
 
         <section id="rightpanel">
-        <section class="menu" id="controls">
-            <img id="continue" title="Continue (F9)" src="imgs/continue.png" alt="Continue" />
+          <section class="menu" id="controls">
+            <img id="continue" title="Continue (F9)" src="imgs/continue.png" class="cpuexec" alt="Continue" />
+            <img id="pause" title="Pause (F9)" src="imgs/pause.png" alt="Pause" class="cpuexec hidden" />
             <img id="step" title="Step (F10)" src="imgs/step.png" alt="Step" />
             <img id="stepover" title="Step Over (F11)" src="imgs/stepover.png" alt="Step over" />
-            <img id="stop" title="Stop" src="imgs/stop.png" alt="Stop" />
             <img id="reset" title="Reset" src="imgs/restart.png" alt="Reset">
             <img id="clean" title="Clean" src="imgs/clean.png" alt="Clean">
-        </section>
+          </section>
 
-        <section class="menu">
+          <section class="menu">
             <section class="menutitle">
-                <img class="menuicon" src="imgs/down-arrow.png" />Breakpoints</section>
-            <section class="menucontent">
+                <img class="menuicon" src="imgs/right-arrow.png" />Breakpoints</section>
+            <section class="menucontent visible">
                 <section id="newbp">
                     <input type="text" id="bpaddr" />
                     <button id="addbp">Add</button>
@@ -256,20 +256,25 @@
                     </ul>
                 </section>
             </section>
-        </section>
+          </section>
 
-        <section class="menu">
+          <section class="menu">
             <section class="menutitle">
                 <img class="menuicon" src="imgs/right-arrow.png" />Settings</section>
-            <section class="menucontent" style="display: none;">
-                <label for="theme">Switch theme:</label>
-                <select id="theme" name="theme">
-                    <option value="dark" selected>Dark (Default)</option>
-                    <option value="light">Light</option>
-                </select>
+            <section class="menucontent">
+                <label>
+                  Switch theme:
+                  <select id="theme" name="theme">
+                      <option value="dark" selected>Dark (Default)</option>
+                      <option value="light">Light</option>
+                  </select>
+                </label>
+                <div id="web-serial-settings">
+                  <label>Web Serial:</label>
+                  <button id="web-serial-connect">Connect Serial</button>
+                </div>
             </section>
-        </section>
-
+          </section>
         </section>
     </section>
 
@@ -277,8 +282,8 @@
       <section class="tabs">
         <div class="tab">Disassemble</div>
         <div id="memory-tab" class="tab">Memory view</div>
-        <div class="tab">Terminal (UART)</div>
-        <div class="tab active">Gamepad</div>
+        <div id="uart-tab" class="tab active">Terminal (UART)</div>
+        <div class="tab">Gamepad</div>
       </section>
       <section id="memdump" class="panel">
       </section>
@@ -289,8 +294,8 @@
           <input type="button" id="dumpnow" value="Dump" />
           <input type="button" id="dump-button" value="Dump ROM" />
           <input type="button" id="dump-eeprom-button" value="Dump EEPROM" />
-          <a id="dump-link" href="#" download="rom_dump.bin" style="display: none;">Dump ROM</a>
-          <a id="dump-eeprom-link" href="#" download="eeprom_dump.bin" style="display: none;">Dump EEPROM</a>
+          <a id="dump-link" download="rom_dump.bin" style="display: none;">Dump ROM</a>
+          <a id="dump-eeprom-link" download="eeprom_dump.bin" style="display: none;">Dump EEPROM</a>
         </section>
         <section class="memline">
             <section id="current_memaddr" class="memaddr"></section>
@@ -337,8 +342,8 @@
 
     <footer>
         <ul>
-            <li><a href="#" id="about" data-target="about-message">About</a></li>
-            <li><a href="#" id="help" data-target="help-message">Help</a></li>
+            <li><a id="about" data-target="about-message">About</a></li>
+            <li><a id="help" data-target="help-message">Help</a></li>
             <li>©2022-2024 Zeal8bit</li>
             <li>v1.0.0-dev</li>
         </ul>
@@ -349,6 +354,7 @@
     <script src="hardemu/rom.js"></script>
     <script src="hardemu/pio.js"></script>
     <script src="hardemu/uart.js"></script>
+    <script src="hardemu/uart-web-serial.js"></script>
     <script src="hardemu/keyboard.js"></script>
     <script src="hardemu/i2c.js"></script>
     <script src="hardemu/ram.js"></script>
